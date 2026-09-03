@@ -9,13 +9,13 @@ export default {
     extend: {
       colors: {
         weather: {
-          dark: '#0d131f',
-          surface: '#151d2d',
-          card: '#1b2538',
-          border: '#2a374f',
-          accent: '#38bdf8',
-          text: '#f1f5f9',
-          muted: '#94a3b8'
+          bg: '#f8fafc',
+          surface: '#ffffff',
+          card: '#ffffff',
+          border: '#e2e8f0',
+          accent: '#0284c7',
+          text: '#0f172a',
+          muted: '#64748b'
         }
       },
       fontFamily: {

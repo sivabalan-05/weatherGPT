@@ -45,10 +45,11 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
         zoomControl: true,
       });
 
-      // CartoDB Dark Matter layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
+      // OpenStreetMap standard (light) layer — CARTO's free anonymous
+      // basemap tiles now require an API key, so we use OSM's tiles directly.
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        subdomains: 'abc',
         maxZoom: 19
       }).addTo(map);
 
@@ -66,7 +67,7 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
         setLoadingPoint(true);
         try {
           const forecast = await WeatherAPI.getForecast(lat, lng, `Point (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`);
-          
+
           if (markerRef.current) {
             markerRef.current.setLatLng([lat, lng]);
             markerRef.current.bindPopup(`<strong>Selected Station</strong><br/>${forecast.current.temperature}°C, ${forecast.current.condition}`).openPopup();
@@ -117,25 +118,25 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
   return (
     <div className="w-full max-w-5xl mx-auto space-y-4">
       {/* Top Map Bar */}
-      <div className="bg-[#121c2e] border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-slate-300">
-          <MapPin className="text-sky-400" size={18} />
-          <span>Active Station: <strong className="text-white">{currentLocation.name}</strong> ({currentLocation.latitude.toFixed(2)}°, {currentLocation.longitude.toFixed(2)}°)</span>
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <MapPin className="text-sky-600" size={18} />
+          <span>Active Station: <strong className="text-slate-900">{currentLocation.name}</strong> ({currentLocation.latitude.toFixed(2)}°, {currentLocation.longitude.toFixed(2)}°)</span>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          <Info size={14} className="text-sky-400" />
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <Info size={14} className="text-sky-600" />
           <span>Click anywhere on the map to inspect weather coordinates</span>
         </div>
       </div>
 
       {/* Map Canvas */}
-      <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-slate-700 shadow-2xl">
+      <div className="relative w-full h-[520px] rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
         <div ref={mapContainerRef} className="w-full h-full" />
 
         {/* Loading Indicator */}
         {loadingPoint && (
-          <div className="absolute top-4 right-4 z-[1000] bg-slate-900/90 border border-slate-700 rounded-xl px-3 py-2 flex items-center gap-2 text-xs text-sky-400 shadow-lg backdrop-blur-sm">
+          <div className="absolute top-4 right-4 z-[1000] bg-white/95 border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2 text-xs text-sky-600 shadow-md backdrop-blur-sm">
             <Loader2 size={16} className="animate-spin" />
             <span>Fetching station readings...</span>
           </div>
@@ -143,21 +144,21 @@ export const WeatherMap: React.FC<WeatherMapProps> = ({
 
         {/* Clicked Coordinate Card Overlay */}
         {clickedWeather && (
-          <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[1000] bg-[#141e33]/95 border border-slate-700 p-4 rounded-2xl shadow-2xl backdrop-blur-md max-w-sm">
+          <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-[1000] bg-white/95 border border-slate-200 p-4 rounded-2xl shadow-lg backdrop-blur-md max-w-sm">
             <div className="flex items-start justify-between gap-2">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-400">Inspected Coordinates</span>
-                <h4 className="text-sm font-bold text-white mt-0.5">{clickedWeather.name}</h4>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-600">Inspected Coordinates</span>
+                <h4 className="text-sm font-bold text-slate-900 mt-0.5">{clickedWeather.name}</h4>
               </div>
-              <span className="text-xl font-extrabold text-white">{clickedWeather.temp}°C</span>
+              <span className="text-xl font-extrabold text-slate-900">{clickedWeather.temp}°C</span>
             </div>
-            <div className="text-xs text-slate-300 mt-1 capitalize">
+            <div className="text-xs text-slate-600 mt-1 capitalize">
               {clickedWeather.cond}
             </div>
 
             <button
               onClick={applyClickedLocation}
-              className="mt-3 w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs rounded-xl transition shadow"
+              className="mt-3 w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold text-xs rounded-xl transition shadow-sm"
             >
               Set as Active Dashboard Location
             </button>
