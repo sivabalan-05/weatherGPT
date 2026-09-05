@@ -1,8 +1,8 @@
 import React from 'react';
-import { LayoutDashboard, Sparkles, ShieldAlert, Map, Sprout, LineChart } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Map, Sprout, LineChart, History } from 'lucide-react';
 import { translations, SupportedLanguage } from '../../i18n/translations';
 
-export type NavTab = 'dashboard' | 'chat' | 'alerts' | 'map' | 'agriculture' | 'climate';
+export type NavTab = 'dashboard' | 'chat' | 'alerts' | 'map' | 'agriculture' | 'climate' | 'dejavu';
 
 interface NavigationProps {
   activeTab: NavTab;
@@ -26,6 +26,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     { id: 'map', label: t.nav_map, icon: <Map size={16} /> },
     { id: 'agriculture', label: t.nav_agriculture, icon: <Sprout size={16} /> },
     { id: 'climate', label: t.nav_climate, icon: <LineChart size={16} /> },
+    { id: 'dejavu', label: t.nav_dejavu, icon: <History size={16} /> },
   ];
 
   return (
@@ -77,11 +78,11 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 key={item.id}
                 onClick={() => onChangeTab(item.id)}
-                className={`flex flex-col items-center justify-center py-1.5 px-2 rounded-xl transition relative ${
+                className={`flex flex-1 min-w-0 flex-col items-center justify-center py-1.5 px-0.5 rounded-xl transition relative ${
                   isActive ? 'text-sky-600 bg-sky-50' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
-                <div className="relative">
+                <div className="relative shrink-0">
                   {item.icon}
                   {item.badge !== undefined && item.badge > 0 && (
                     <span className="absolute -top-1.5 -right-2 w-4 h-4 rounded-full bg-amber-500 text-white font-bold text-[9px] flex items-center justify-center shadow-sm">
@@ -89,7 +90,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-medium mt-1 max-w-[50px] truncate text-center">
+                <span className="text-[9px] font-medium mt-1 w-full truncate text-center leading-tight">
                   {item.label.split(' ')[0]}
                 </span>
               </button>

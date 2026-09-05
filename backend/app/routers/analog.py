@@ -2,19 +2,20 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from ..services.climate_service import ClimateService
+from ..services.analog_engine import AnalogEngine
 
-router = APIRouter(prefix="/api/climate", tags=["climate"])
+router = APIRouter(prefix="/api/analog", tags=["analog"])
 
 
-@router.get("/trends")
-async def get_climate_trends(
+@router.get("")
+async def get_weather_analogs(
     lat: float = Query(..., description="Latitude between -90.0 and 90.0"),
     lon: float = Query(..., description="Longitude between -180.0 and 180.0"),
-    name: str = Query("Region", description="Location Name")
+    name: str = Query("This location", description="City/Location Name")
 ):
+    """Historical days resembling today, and what followed each of them."""
     try:
-        return await ClimateService.get_climate_trends(lat, lon, name)
+        return await AnalogEngine.find_analogs(lat, lon, name)
     except ValueError as val_err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,5 +29,5 @@ async def get_climate_trends(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error retrieving climate trends: {str(e)}"
+            detail=f"Unexpected error retrieving historical analogs: {str(e)}"
         )

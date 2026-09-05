@@ -135,10 +135,87 @@ export interface MonthlyClimateItem {
 export interface ClimateTrendsResponse {
   location_name: string;
   coordinates: { latitude: number; longitude: number };
+  recorded_year?: number;
+  normal_period?: string;
   annual_rainfall_mm: number;
   normal_annual_rainfall_mm: number;
   annual_mean_temp_c: number;
   rainfall_status: string;
   monthly_trends: MonthlyClimateItem[];
   climate_summary: string;
+}
+
+
+// --- Weather Deja Vu: historical analog matching ---
+
+export interface AnalogOutcomeDay {
+  offset: number;
+  date: string;
+  tmax: number;
+  tmin: number;
+  precip: number;
+  condition: string;
+  icon: string;
+  category: string;
+}
+
+export interface AnalogDay {
+  date: string;
+  year: number;
+  similarity: number;
+  tmax: number;
+  tmin: number;
+  precip: number;
+  humidity: number;
+  wind: number;
+  pressure: number;
+  condition: string;
+  icon: string;
+  category: string;
+  outcome: AnalogOutcomeDay[];
+  outcome_total_precip_mm: number;
+}
+
+export interface AnalogToday {
+  date: string;
+  tmax: number;
+  tmin: number;
+  precip: number;
+  humidity: number;
+  pressure: number;
+  wind: number;
+  condition: string;
+  icon: string;
+  category: string;
+}
+
+export interface AnalogArchiveMeta {
+  start_date: string;
+  end_date: string;
+  day_count: number;
+  years_covered: number;
+  candidates_considered: number;
+  seasonal_window_days: number;
+  min_separation_days: number;
+}
+
+export interface AnalogSummary {
+  analog_count: number;
+  rain_within_72h_count: number;
+  rain_within_72h_pct: number;
+  mean_7day_precip_mm: number;
+  max_7day_precip_mm: number;
+  min_7day_precip_mm: number;
+  mean_tmax_delta_day3_c: number;
+}
+
+export interface AnalogResponse {
+  location_name: string;
+  coordinates: { latitude: number; longitude: number };
+  today: AnalogToday;
+  archive: AnalogArchiveMeta;
+  analogs: AnalogDay[];
+  summary: AnalogSummary;
+  verdict: string;
+  similarity_note: string;
 }
