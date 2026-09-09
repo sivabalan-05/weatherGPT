@@ -12,6 +12,7 @@ import { AlertsView } from './components/alerts/AlertsView';
 import { WeatherMap } from './components/map/WeatherMap';
 import { AgriAdvisory } from './components/agriculture/AgriAdvisory';
 import { ClimateView } from './components/climate/ClimateView';
+import { AnalogView } from './components/analog/AnalogView';
 import { VoiceInputModal } from './components/common/VoiceInputModal';
 import { LocationInfo, ForecastResponse, AlertItem } from './types/weather';
 import { WeatherAPI, WeatherAPIError } from './api/client';
@@ -257,6 +258,15 @@ export function App() {
             {activeTab === 'climate' && (
               <div className="animate-in fade-in duration-200">
                 <ClimateView
+                  location={activeLocation}
+                  lang={selectedLanguage}
+                />
+              </div>
+            )}
+
+            {activeTab === 'dejavu' && (
+              <div className="animate-in fade-in duration-200">
+                <AnalogView
                   location={activeLocation}
                   lang={selectedLanguage}
                 />

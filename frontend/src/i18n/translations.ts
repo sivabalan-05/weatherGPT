@@ -27,6 +27,23 @@ export interface TranslationDict {
   farming_activities: string;
   climate_trends: string;
   disclaimer: string;
+  nav_dejavu: string;
+  dejavu_title: string;
+  dejavu_subtitle: string;
+  dejavu_today_fingerprint: string;
+  dejavu_closest_matches: string;
+  dejavu_what_followed: string;
+  dejavu_rain_72h: string;
+  dejavu_avg_week: string;
+  dejavu_temp_day3: string;
+  dejavu_match: string;
+  dejavu_searching: string;
+  dejavu_unavailable: string;
+  dejavu_retry: string;
+  dejavu_archive_note: string;
+  dejavu_similarity_caveat: string;
+  dejavu_next_7_days: string;
+  dejavu_that_week_total: string;
 }
 
 export const translations: Record<SupportedLanguage, TranslationDict> = {
@@ -56,7 +73,24 @@ export const translations: Record<SupportedLanguage, TranslationDict> = {
     irrigation_advisory: "Irrigation Advisory",
     farming_activities: "Field Operation Windows",
     climate_trends: "Historical Climate Records",
-    disclaimer: "Advisory based on numerical meteorological predictions."
+    disclaimer: "Advisory based on numerical meteorological predictions.",
+    nav_dejavu: "Déjà Vu",
+    dejavu_title: "Weather Déjà Vu",
+    dejavu_subtitle: "When this place last looked like today, here is what came next.",
+    dejavu_today_fingerprint: "Today's fingerprint",
+    dejavu_closest_matches: "Closest days in the record",
+    dejavu_what_followed: "What history did next",
+    dejavu_rain_72h: "Rain within 72 hours",
+    dejavu_avg_week: "Average week that followed",
+    dejavu_temp_day3: "Temperature by day 3",
+    dejavu_match: "match",
+    dejavu_searching: "Searching four decades of observed record…",
+    dejavu_unavailable: "No historical match available",
+    dejavu_retry: "Try again",
+    dejavu_archive_note: "Matched against observed daily records",
+    dejavu_similarity_caveat: "Match strength compares how alike two days were. It is not a probability.",
+    dejavu_next_7_days: "The 7 days that followed",
+    dejavu_that_week_total: "total that week"
   },
   hi: {
     app_name: "वेदर जीपीटी (WeatherGPT)",
@@ -84,7 +118,24 @@ export const translations: Record<SupportedLanguage, TranslationDict> = {
     irrigation_advisory: "सिंचाई सलाह",
     farming_activities: "कृषि कार्य का उचित समय",
     climate_trends: "ऐतिहासिक जलवायु आंकड़े",
-    disclaimer: "यह सलाह मौसम विज्ञान मॉडलों पर आधारित है।"
+    disclaimer: "यह सलाह मौसम विज्ञान मॉडलों पर आधारित है।",
+    nav_dejavu: "डेजा वू",
+    dejavu_title: "मौसम डेजा वू",
+    dejavu_subtitle: "जब यह जगह पिछली बार आज जैसी दिखी थी, उसके बाद यह हुआ था।",
+    dejavu_today_fingerprint: "आज की पहचान",
+    dejavu_closest_matches: "रिकॉर्ड में सबसे मिलते-जुलते दिन",
+    dejavu_what_followed: "इतिहास में आगे क्या हुआ",
+    dejavu_rain_72h: "72 घंटों में वर्षा",
+    dejavu_avg_week: "उसके बाद का औसत सप्ताह",
+    dejavu_temp_day3: "तीसरे दिन तक तापमान",
+    dejavu_match: "मेल",
+    dejavu_searching: "चार दशकों के दर्ज रिकॉर्ड खोजे जा रहे हैं…",
+    dejavu_unavailable: "कोई ऐतिहासिक मेल उपलब्ध नहीं",
+    dejavu_retry: "फिर कोशिश करें",
+    dejavu_archive_note: "दर्ज दैनिक रिकॉर्ड से मिलान किया गया",
+    dejavu_similarity_caveat: "मेल की ताकत बताती है कि दो दिन कितने समान थे। यह संभावना नहीं है।",
+    dejavu_next_7_days: "उसके बाद के 7 दिन",
+    dejavu_that_week_total: "उस सप्ताह कुल"
   },
   te: {
     app_name: "వెదర్ జీపీటీ (WeatherGPT)",
@@ -112,7 +163,24 @@ export const translations: Record<SupportedLanguage, TranslationDict> = {
     irrigation_advisory: "నీటిపారుదల సలహా",
     farming_activities: "పొలం పనుల అనుకూల సమయం",
     climate_trends: "చారిత్రక వాతావరణ రికార్డులు",
-    disclaimer: "ఈ సలహా వాతావరణ సూచన నమూనాలపై ఆధారపడి ఉంటుంది."
+    disclaimer: "ఈ సలహా వాతావరణ సూచన నమూనాలపై ఆధారపడి ఉంటుంది.",
+    nav_dejavu: "డేజా వు",
+    dejavu_title: "వాతావరణ డేజా వు",
+    dejavu_subtitle: "ఈ ప్రాంతం చివరిసారి ఇలా ఉన్నప్పుడు, ఆ తర్వాత ఏమి జరిగిందో ఇదిగో.",
+    dejavu_today_fingerprint: "నేటి ముద్ర",
+    dejavu_closest_matches: "రికార్డులో అత్యంత దగ్గరి రోజులు",
+    dejavu_what_followed: "చరిత్రలో ఆ తర్వాత ఏమైంది",
+    dejavu_rain_72h: "72 గంటల్లో వర్షం",
+    dejavu_avg_week: "ఆ తర్వాతి సగటు వారం",
+    dejavu_temp_day3: "మూడో రోజు నాటికి ఉష్ణోగ్రత",
+    dejavu_match: "సరిపోలిక",
+    dejavu_searching: "నాలుగు దశాబ్దాల నమోదిత రికార్డును వెతుకుతోంది…",
+    dejavu_unavailable: "చారిత్రక సరిపోలిక అందుబాటులో లేదు",
+    dejavu_retry: "మళ్ళీ ప్రయత్నించండి",
+    dejavu_archive_note: "నమోదైన రోజువారీ రికార్డులతో సరిపోల్చబడింది",
+    dejavu_similarity_caveat: "సరిపోలిక బలం రెండు రోజులు ఎంత సారూప్యంగా ఉన్నాయో చూపుతుంది. ఇది సంభావ్యత కాదు.",
+    dejavu_next_7_days: "ఆ తర్వాతి 7 రోజులు",
+    dejavu_that_week_total: "ఆ వారం మొత్తం"
   },
   ta: {
     app_name: "வெதர் ஜிபிடி (WeatherGPT)",
@@ -140,6 +208,23 @@ export const translations: Record<SupportedLanguage, TranslationDict> = {
     irrigation_advisory: "பாசன ஆலோசனை",
     farming_activities: "விவசாய பணிகள் நேரம்",
     climate_trends: "வரலாற்று காலநிலை பதிவுகள்",
-    disclaimer: "இந்த ஆலோசனை வானிலை மாதிரிகளை அடிப்படையாகக் கொண்டது."
+    disclaimer: "இந்த ஆலோசனை வானிலை மாதிரிகளை அடிப்படையாகக் கொண்டது.",
+    nav_dejavu: "டெஜா வூ",
+    dejavu_title: "வானிலை டெஜா வூ",
+    dejavu_subtitle: "இந்த இடம் கடைசியாக இன்று போல் இருந்தபோது, அதன் பிறகு நடந்தது இதுதான்.",
+    dejavu_today_fingerprint: "இன்றைய அடையாளம்",
+    dejavu_closest_matches: "பதிவில் மிக நெருக்கமான நாட்கள்",
+    dejavu_what_followed: "வரலாற்றில் அடுத்து நடந்தது",
+    dejavu_rain_72h: "72 மணி நேரத்தில் மழை",
+    dejavu_avg_week: "அதைத் தொடர்ந்த சராசரி வாரம்",
+    dejavu_temp_day3: "மூன்றாம் நாள் வெப்பநிலை",
+    dejavu_match: "பொருத்தம்",
+    dejavu_searching: "நான்கு தசாப்தப் பதிவுகள் தேடப்படுகின்றன…",
+    dejavu_unavailable: "வரலாற்றுப் பொருத்தம் கிடைக்கவில்லை",
+    dejavu_retry: "மீண்டும் முயற்சிக்கவும்",
+    dejavu_archive_note: "பதிவான தினசரி ஆவணங்களுடன் ஒப்பிடப்பட்டது",
+    dejavu_similarity_caveat: "பொருத்த வலிமை இரு நாட்கள் எவ்வளவு ஒத்தவை என்பதைக் காட்டுகிறது. இது நிகழ்தகவு அல்ல.",
+    dejavu_next_7_days: "அதைத் தொடர்ந்த 7 நாட்கள்",
+    dejavu_that_week_total: "அந்த வாரம் மொத்தம்"
   }
 };

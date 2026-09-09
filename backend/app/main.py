@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import weather, chat, alerts, agriculture, climate
+from .routers import weather, chat, alerts, agriculture, climate, analog
 from .core.config import settings
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.include_router(chat.router)
 app.include_router(alerts.router)
 app.include_router(agriculture.router)
 app.include_router(climate.router)
+app.include_router(analog.router)
 
 @app.get("/")
 async def root():
@@ -38,7 +39,8 @@ async def root():
             "/api/alerts",
             "/api/agriculture/crops",
             "/api/agriculture/advisory",
-            "/api/climate/trends"
+            "/api/climate/trends",
+            "/api/analog"
         ]
     }
 

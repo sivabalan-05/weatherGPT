@@ -1,4 +1,4 @@
-import { ForecastResponse, AlertItem, AgriAdvisoryResponse, ClimateTrendsResponse, LocationInfo } from '../types/weather';
+import { ForecastResponse, AlertItem, AgriAdvisoryResponse, ClimateTrendsResponse, AnalogResponse, LocationInfo } from '../types/weather';
 
 const API_BASE = 'http://127.0.0.1:8000/api';
 
@@ -279,5 +279,26 @@ export const WeatherAPI = {
       return await res.json();
     }
     throw new Error("Failed to fetch climate trends");
+  },
+
+  // Historical analog matching. Deliberately has no direct-to-Open-Meteo
+  // fallback: the analog computation IS the feature, and reimplementing it
+  // client-side would duplicate the algorithm in two languages. On backend
+  // failure the view shows an explanatory empty state instead.
+  async getWeatherAnalogs(lat: number, lon: number, name: string): Promise<AnalogResponse> {
+    const res = await fetch(
+      `${API_BASE}/analog?lat=${lat}&lon=${lon}&name=${encodeURIComponent(name)}`
+    );
+    if (res.ok) {
+      return await res.json();
+    }
+    let detail = "Unable to search the historical archive for this location.";
+    try {
+      const err = await res.json();
+      if (err?.detail) detail = err.detail;
+    } catch {
+      // Response body was not JSON; keep the generic message.
+    }
+    throw new WeatherAPIError(detail, res.status);
   }
 };

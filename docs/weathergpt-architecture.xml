@@ -1,0 +1,651 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WeatherGPT - Project Architecture Reference
+  Generated 2026-09-05 for presentation authoring.
+  Every figure below was measured from the repository, not estimated.
+-->
+<project name="WeatherGPT" version="1.0.0" generated="2026-09-05">
+
+  <overview>
+    <tagline>Intelligent Meteorological Intelligence and Advisory</tagline>
+    <summary>
+      A two-part meteorological platform pairing a FastAPI backend that enriches
+      Open-Meteo data with a React single-page frontend. It combines a live
+      dashboard, a natural-language weather assistant, IMD-aligned severe weather
+      alerts, an interactive map, crop advisory, climate trends, and historical
+      analog forecasting.
+    </summary>
+    <problem>
+      General weather apps report numbers without interpretation, and AI weather
+      assistants tend to invent numbers that sound plausible but are not measured.
+      Neither helps a farmer or traveller decide what to actually do.
+    </problem>
+    <solution>
+      Ground every number in observed or forecast data from Open-Meteo, then use
+      language only to explain those numbers. Add decision-oriented modules for
+      agriculture, hazards, and historical precedent.
+    </solution>
+    <corePrinciple id="grounding" importance="highest">
+      <statement>All numeric weather facts originate from Open-Meteo. No language model ever produces a number.</statement>
+      <enforcement>
+        The assistant fetches real data, extracts only the slice relevant to the
+        question, and passes those verified values to the explainer. Without an
+        LLM key configured, a deterministic template synthesiser produces the same
+        response shape from the same verified numbers.
+      </enforcement>
+      <uiClaim>Strict Zero AI Hallucinations</uiClaim>
+    </corePrinciple>
+  </overview>
+
+  <techStack>
+    <backend language="Python" framework="FastAPI">
+      <dependency name="fastapi" version="&gt;=0.110.0" role="Web framework and OpenAPI generation"/>
+      <dependency name="uvicorn" version="&gt;=0.28.0" role="ASGI server, run with reload in development"/>
+      <dependency name="httpx" version="&gt;=0.27.0" role="Async HTTP client for all upstream calls"/>
+      <dependency name="pydantic" version="&gt;=2.6.0" role="Settings model and validation"/>
+      <dependency name="python-multipart" version="&gt;=0.0.9" role="Form parsing support"/>
+      <entryPoint>backend/run.py starts uvicorn on 127.0.0.1:8000 with reload enabled</entryPoint>
+      <interactiveDocs>/docs (Swagger UI), /redoc, /openapi.json</interactiveDocs>
+    </backend>
+
+    <frontend language="TypeScript" framework="React">
+      <dependency name="react" version="19.2.8" role="UI runtime"/>
+      <dependency name="react-dom" version="19.2.8" role="DOM renderer"/>
+      <dependency name="vite" version="8.2.2" role="Dev server and bundler"/>
+      <dependency name="typescript" version="6.0.2" role="Type system"/>
+      <dependency name="tailwindcss" version="4.3.3" role="Utility-first styling"/>
+      <dependency name="recharts" version="3.10.1" role="Climate trend charts"/>
+      <dependency name="leaflet" version="1.9.4" role="Interactive weather map"/>
+      <dependency name="lucide-react" version="1.40.0" role="Icon set"/>
+      <dependency name="oxlint" version="1.79.0" role="Linter"/>
+      <scripts>
+        <script name="dev" command="vite"/>
+        <script name="build" command="tsc -b then vite build"/>
+        <script name="lint" command="oxlint"/>
+        <script name="preview" command="vite preview"/>
+      </scripts>
+    </frontend>
+
+    <externalServices>
+      <service name="Open-Meteo Forecast API" url="https://api.open-meteo.com/v1"
+               role="Current conditions, hourly and daily forecast" auth="none"/>
+      <service name="Open-Meteo Geocoding API" url="https://geocoding-api.open-meteo.com/v1"
+               role="City name to coordinate resolution" auth="none"/>
+      <service name="Open-Meteo Historical Archive" url="https://archive-api.open-meteo.com/v1"
+               role="ERA5 reanalysis daily record from 1985, global coverage" auth="none"/>
+      <service name="Google Gemini" role="Optional explanation layer" auth="GEMINI_API_KEY" optional="true"/>
+      <service name="OpenAI" role="Optional explanation layer fallback" auth="OPENAI_API_KEY" optional="true"/>
+      <note>
+        Both language model providers are optional. With no key configured the
+        assistant runs entirely on the deterministic synthesiser and still returns
+        the same response shape.
+      </note>
+    </externalServices>
+
+    <models>
+      <model name="ECMWF" resolution="9km" role="Primary numerical weather prediction source"/>
+      <model name="GFS" role="Secondary numerical weather prediction source"/>
+      <model name="ERA5" role="Reanalysis backing the historical archive"/>
+    </models>
+  </techStack>
+
+  <architecture style="Layered client-server with resilient direct-to-provider fallback">
+
+    <layer name="Presentation" location="frontend/src/components">
+      <responsibility>Render views, handle interaction, localise all strings</responsibility>
+      <detail>Seven tab views plus shared layout and common components</detail>
+    </layer>
+
+    <layer name="API Client" location="frontend/src/api/client.ts">
+      <responsibility>Single point of contact with the backend</responsibility>
+      <detail>
+        For most calls it tries the FastAPI backend first, and on network failure,
+        a non-400 error, or a 5xx it falls back to calling Open-Meteo directly from
+        the browser. This keeps the dashboard usable when the backend is down.
+      </detail>
+      <tradeoff>
+        The fallback duplicates weather-code mapping and summary logic client-side,
+        so a change to the backend WMO mapping must be mirrored here.
+      </tradeoff>
+    </layer>
+
+    <layer name="HTTP Routing" location="backend/app/routers">
+      <responsibility>Validate query parameters and delegate to a service</responsibility>
+      <detail>
+        Thin routers with a uniform error contract. Each translates ValueError to
+        400, RuntimeError to 502, and anything unexpected to 500.
+      </detail>
+    </layer>
+
+    <layer name="Domain Services" location="backend/app/services">
+      <responsibility>All meteorological logic and upstream integration</responsibility>
+      <detail>Seven services, each owning one domain and independently testable</detail>
+    </layer>
+
+    <layer name="Configuration" location="backend/app/core/config.py">
+      <responsibility>Settings read from environment with sane defaults</responsibility>
+      <detail>
+        Pydantic BaseModel (not BaseSettings) populated via os.getenv. Holds the
+        three Open-Meteo base URLs and the optional LLM keys.
+      </detail>
+    </layer>
+
+    <crossCutting>
+      <concern name="CORS">Wide open, allow_origins set to all, configured in main.py</concern>
+      <concern name="Localisation">Four languages, all UI strings routed through a token dictionary</concern>
+      <concern name="Error contract">Uniform ValueError and RuntimeError to 400 and 502 mapping across every router</concern>
+      <concern name="Caching">In-memory LRU with TTL in the archive service, shared by two features</concern>
+    </crossCutting>
+  </architecture>
+
+  <dataFlows>
+    <flow name="Standard forecast request">
+      <step n="1">User selects a location, or searches a city via the geocoding endpoint</step>
+      <step n="2">Frontend calls GET /api/weather/forecast with lat, lon, name</step>
+      <step n="3">WeatherService calls Open-Meteo forecast API</step>
+      <step n="4">WMO weather codes are mapped to label, icon, and category</step>
+      <step n="5">Response is shaped into current, hourly, daily, and a summary sentence</step>
+      <step n="6">On backend failure the client falls back to calling Open-Meteo directly</step>
+    </flow>
+
+    <flow name="Grounded assistant query" significance="core design principle">
+      <step n="1">QueryEntityExtractor regex-parses the free-text question</step>
+      <step n="2">It resolves a location override, a timeframe bucket, and an intent category</step>
+      <step n="3">WeatherService fetches real forecast data for the resolved location</step>
+      <step n="4">AlertEngine classifies that forecast into any active hazards</step>
+      <step n="5">_extract_weather_slice pulls only the verified numbers for the requested timeframe</step>
+      <step n="6">_generate_grounded_explanation explains those exact numbers, forbidden from inventing values</step>
+      <step n="7">If no LLM key is set, _grounded_deterministic_synthesis templates the same answer per intent</step>
+      <step n="8">Both paths return an identical JSON shape</step>
+      <returns>answer, badge, rating, key_facts, action_advice, suggested_followups</returns>
+    </flow>
+
+    <flow name="Historical analog matching" significance="newest feature">
+      <step n="1">ArchiveService fetches or serves from cache a 41-year daily record for the location</step>
+      <step n="2">Today's six-feature fingerprint is read from the forecast API</step>
+      <step n="3">Candidates are gated to plus or minus 10 circular days of today's day-of-year across all years</step>
+      <step n="4">Features are z-scored across the candidate pool and compared by weighted Euclidean distance</step>
+      <step n="5">Matches are selected best-first with a 7-day minimum separation so each is a distinct episode</step>
+      <step n="6">For each match, the following 7 days are read from the archive</step>
+      <step n="7">Aggregates and a deterministic verdict sentence are computed</step>
+    </flow>
+  </dataFlows>
+
+  <backendModules>
+    <module path="backend/run.py" loc="4" role="Uvicorn entry point"/>
+    <module path="backend/app/main.py" loc="49" role="FastAPI app, CORS, router mounting, root and health endpoints"/>
+    <module path="backend/app/core/config.py" loc="17" role="Settings: base URLs, optional LLM keys, debug flag"/>
+
+    <module path="backend/app/routers/weather.py" loc="41" role="City search and forecast endpoints"/>
+    <module path="backend/app/routers/chat.py" loc="27" role="Assistant query endpoint"/>
+    <module path="backend/app/routers/alerts.py" loc="25" role="Severe weather alert endpoint"/>
+    <module path="backend/app/routers/agriculture.py" loc="28" role="Crop list and advisory endpoints"/>
+    <module path="backend/app/routers/climate.py" loc="32" role="Climate trends endpoint"/>
+    <module path="backend/app/routers/analog.py" loc="33" role="Historical analog endpoint"/>
+
+    <module path="backend/app/services/weather_service.py" loc="267" role="Open-Meteo integration, owns the WMO code map">
+      <owns>WMO_CODE_MAP: 21 weather codes to label, icon, and category</owns>
+    </module>
+    <module path="backend/app/services/ai_assistant.py" loc="576" role="Grounded natural-language assistant, largest module">
+      <owns>QueryEntityExtractor, weather slice extraction, LLM and deterministic explanation paths</owns>
+    </module>
+    <module path="backend/app/services/alert_engine.py" loc="190" role="IMD-aligned hazard threshold classification"/>
+    <module path="backend/app/services/agri_engine.py" loc="187" role="Per-crop irrigation, spraying, and harvest advisory"/>
+    <module path="backend/app/services/archive_service.py" loc="196" role="Historical archive fetch and cache, shared layer">
+      <owns>LRU cache, 32 entries, 24 hour TTL, keyed on coordinates rounded to 0.1 degrees</owns>
+    </module>
+    <module path="backend/app/services/analog_engine.py" loc="378" role="Historical analog matching and outcome summarisation"/>
+    <module path="backend/app/services/climate_service.py" loc="136" role="Real monthly normals and departures from the archive"/>
+  </backendModules>
+
+  <frontendModules>
+    <module path="frontend/src/main.tsx" loc="10" role="React root"/>
+    <module path="frontend/src/App.tsx" loc="336" role="Tab routing, location state, data loading"/>
+    <module path="frontend/src/api/client.ts" loc="304" role="Backend client with direct-to-provider fallback"/>
+    <module path="frontend/src/types/weather.ts" loc="221" role="Shared interfaces mirroring backend response shapes"/>
+    <module path="frontend/src/i18n/translations.ts" loc="230" role="Token dictionaries for four languages"/>
+
+    <module path="frontend/src/components/layout/Header.tsx" loc="117" role="Branding, city search trigger, language selector"/>
+    <module path="frontend/src/components/layout/Navigation.tsx" loc="103" role="Desktop segmented bar and mobile bottom dock"/>
+
+    <module path="frontend/src/components/dashboard/WeatherHero.tsx" loc="169" role="Headline current conditions"/>
+    <module path="frontend/src/components/dashboard/MetricsGrid.tsx" loc="239" role="Secondary metric tiles"/>
+    <module path="frontend/src/components/dashboard/HourlyStrip.tsx" loc="83" role="Hourly scroll strip"/>
+    <module path="frontend/src/components/dashboard/DailyForecast.tsx" loc="141" role="Multi-day outlook"/>
+    <module path="frontend/src/components/dashboard/CitySearchModal.tsx" loc="224" role="Command-K city search"/>
+    <module path="frontend/src/components/dashboard/DashboardAlertsBanner.tsx" loc="143" role="Inline alert surface"/>
+
+    <module path="frontend/src/components/chat/WeatherGPTAssistant.tsx" loc="458" role="Assistant advisory cards, largest component"/>
+    <module path="frontend/src/components/alerts/AlertsView.tsx" loc="173" role="Full alert list with severity badges"/>
+    <module path="frontend/src/components/map/WeatherMap.tsx" loc="170" role="Leaflet interactive map"/>
+    <module path="frontend/src/components/agriculture/AgriAdvisory.tsx" loc="232" role="Crop selector and advisory output"/>
+    <module path="frontend/src/components/climate/ClimateView.tsx" loc="178" role="Recharts climate trend charts"/>
+    <module path="frontend/src/components/analog/AnalogView.tsx" loc="358" role="Historical analog presentation"/>
+
+    <module path="frontend/src/components/common/WeatherIcon.tsx" loc="38" role="WMO icon name to Lucide icon mapping"/>
+    <module path="frontend/src/components/common/VoiceInputModal.tsx" loc="147" role="Web Speech API voice input"/>
+  </frontendModules>
+
+  <api baseUrl="http://127.0.0.1:8000">
+    <endpoint method="GET" path="/" description="Service metadata and endpoint index"/>
+    <endpoint method="GET" path="/api/health" description="Health check"/>
+
+    <endpoint method="GET" path="/api/weather/search" tag="weather" description="City geocoding search">
+      <param name="q" type="string" required="true" description="City name, minimum length 1"/>
+      <returns>Up to 8 matches with name, coordinates, country, and admin region</returns>
+    </endpoint>
+
+    <endpoint method="GET" path="/api/weather/forecast" tag="weather" description="Current, hourly, and daily forecast">
+      <param name="lat" type="float" required="true" description="Latitude, -90 to 90"/>
+      <param name="lon" type="float" required="true" description="Longitude, -180 to 180"/>
+      <param name="name" type="string" required="false" default="Current Location"/>
+    </endpoint>
+
+    <endpoint method="POST" path="/api/chat/query" tag="chat" description="Grounded natural-language weather question"/>
+
+    <endpoint method="GET" path="/api/alerts" tag="alerts" description="Active severe weather alerts">
+      <param name="lat" type="float" required="true"/>
+      <param name="lon" type="float" required="true"/>
+      <param name="name" type="string" required="false"/>
+    </endpoint>
+
+    <endpoint method="GET" path="/api/agriculture/crops" tag="agriculture" description="Supported crop list"/>
+    <endpoint method="GET" path="/api/agriculture/advisory" tag="agriculture" description="Per-crop advisory">
+      <param name="crop" type="string" required="false" default="rice"/>
+      <param name="lat" type="float" required="true"/>
+      <param name="lon" type="float" required="true"/>
+      <param name="name" type="string" required="false"/>
+    </endpoint>
+
+    <endpoint method="GET" path="/api/climate/trends" tag="climate" description="Monthly normals and departures">
+      <param name="lat" type="float" required="true"/>
+      <param name="lon" type="float" required="true"/>
+      <param name="name" type="string" required="false" default="Region"/>
+    </endpoint>
+
+    <endpoint method="GET" path="/api/analog" tag="analog" description="Historical analog days and their outcomes">
+      <param name="lat" type="float" required="true"/>
+      <param name="lon" type="float" required="true"/>
+      <param name="name" type="string" required="false" default="This location"/>
+    </endpoint>
+
+    <errorContract>
+      <mapping exception="ValueError" status="400" meaning="Invalid input, for example out-of-range coordinates"/>
+      <mapping exception="RuntimeError" status="502" meaning="Upstream provider failed, timed out, or rate limited"/>
+      <mapping exception="Exception" status="500" meaning="Unexpected internal error"/>
+    </errorContract>
+  </api>
+
+  <features count="7">
+
+    <feature id="dashboard" name="Live Dashboard" navTab="Dashboard">
+      <description>Current conditions, metric tiles, hourly strip, and multi-day outlook</description>
+      <components>WeatherHero, MetricsGrid, HourlyStrip, DailyForecast, DashboardAlertsBanner, CitySearchModal</components>
+      <highlight>Command-K city search with geocoding</highlight>
+    </feature>
+
+    <feature id="assistant" name="WeatherGPT Assistant" navTab="WeatherGPT AI">
+      <description>Natural-language weather questions answered from verified numbers only</description>
+      <intents count="7">rain, travel, temperature, outdoor, clothing, severe, general</intents>
+      <timeframes>today, this_evening, tonight, tomorrow, this_week</timeframes>
+      <highlight>Works with or without an LLM key; the deterministic path returns the same shape</highlight>
+      <input>Text entry plus optional Web Speech API voice input</input>
+    </feature>
+
+    <feature id="alerts" name="Severe Weather Alerts" navTab="Alerts">
+      <description>IMD-aligned hazard classification against threshold bands</description>
+      <hazards count="6">Heavy Rain, Cyclone, Thunderstorm and Lightning, Heatwave, Flood risk, High Wind</hazards>
+      <severities count="4">Low, Moderate, High, Extreme</severities>
+      <highlight>Alert count surfaces as a live badge on the navigation</highlight>
+    </feature>
+
+    <feature id="map" name="Interactive Weather Map" navTab="Weather Map">
+      <description>Leaflet map centred on the active station with current conditions</description>
+    </feature>
+
+    <feature id="agriculture" name="Agriculture Advisory" navTab="Agriculture">
+      <description>Irrigation, spraying, and harvest guidance computed from precipitation forecasts</description>
+      <crops count="7">rice, wheat, cotton, sugarcane, maize, groundnut, tomato</crops>
+    </feature>
+
+    <feature id="climate" name="Climate Trends" navTab="Climate">
+      <description>Monthly temperature profiles and rainfall departure against long-term normals</description>
+      <baseline>1991-2020 WMO standard reference period</baseline>
+      <charts>Recharts area and bar charts</charts>
+      <recentChange>
+        Previously generated its output from sine curves. Rewritten to aggregate
+        the real Open-Meteo archive, so departures now carry their conventional
+        meteorological meaning.
+      </recentChange>
+    </feature>
+
+    <feature id="dejavu" name="Weather Deja Vu" navTab="Deja Vu" status="newest">
+      <description>
+        Finds historical days whose atmospheric state resembles today, then shows
+        what actually happened in the seven days after each one.
+      </description>
+      <novelty>
+        Analog forecasting is an established meteorological technique that is
+        essentially never surfaced to end users. Consumer weather apps report a
+        probability; this reports the empirical precedent behind it.
+      </novelty>
+      <example>
+        Chennai, 5 September 2026: eight of the eight closest matches across 41
+        years were raining within 72 hours, the following week averaged 41.1mm.
+      </example>
+    </feature>
+  </features>
+
+  <algorithms>
+    <algorithm name="Historical Analog Matching" module="analog_engine.py">
+      <purpose>Answer what usually follows a day like today, using this location's own record</purpose>
+
+      <step n="1" name="Seasonal gate">
+        <detail>
+          Candidates restricted to plus or minus 10 days of today's day-of-year,
+          across all archive years. Day-of-year distance is circular, so 31
+          December and 2 January are 2 days apart, not 364.
+        </detail>
+        <rationale>
+          Load-bearing. Without it a warm January day could match an August
+          monsoon day on temperature and humidity alone, and the resulting
+          outcome would describe dynamics that cannot occur in January.
+        </rationale>
+        <result>Approximately 861 candidates for a typical location</result>
+      </step>
+
+      <step n="2" name="Fingerprint">
+        <featureVector count="6">
+          <dimension name="precipitation_sum" weight="2.0" transform="log1p"/>
+          <dimension name="temperature_2m_max" weight="1.5"/>
+          <dimension name="temperature_2m_min" weight="1.5"/>
+          <dimension name="relative_humidity_2m_mean" weight="1.0"/>
+          <dimension name="surface_pressure_mean" weight="1.0"/>
+          <dimension name="wind_speed_10m_max" weight="0.5"/>
+        </featureVector>
+        <rationale>
+          Precipitation is log-transformed because it is zero-inflated and
+          long-tailed; raw values would let a single extreme day dominate the
+          metric. Weights are ordered by consequence to a decision-maker.
+        </rationale>
+        <note>
+          Today's fingerprint comes from the forecast API because the archive lags
+          about five days. The same six variables are read from both sources so
+          the vectors are directly comparable.
+        </note>
+      </step>
+
+      <step n="3" name="Distance">
+        <detail>Features z-scored across the candidate pool, then weighted Euclidean distance</detail>
+        <rationale>Standardising against the candidate pool rather than the whole archive sets the scale by seasonally comparable days</rationale>
+      </step>
+
+      <step n="4" name="Diverse selection" significance="correctness fix">
+        <detail>Matches taken best-first, skipping any within 7 days of one already chosen</detail>
+        <rationale>
+          Without this the top matches cluster inside a single historical weather
+          episode. In testing, three of the top eight were the same 2015 week, and
+          their near-identical aftermaths inflated every aggregate. Adding the
+          separation changed the Hyderabad rain-within-72-hours figure from 50
+          percent to 25 percent; the original was wrong.
+        </rationale>
+      </step>
+
+      <step n="5" name="Similarity score">
+        <formula>similarity = 100 * exp(-distance / median_candidate_distance)</formula>
+        <caveat>
+          A relative closeness measure against a typical day at this location and
+          season. It is not a probability, and the interface says so explicitly.
+        </caveat>
+      </step>
+
+      <step n="6" name="Outcome window">
+        <detail>Days plus 1 to plus 7 read from the archive for each selected match</detail>
+        <detail>Matches without a complete, calendar-contiguous window are discarded before ranking, never truncated</detail>
+        <rationale>A partial window would silently bias aggregates downward</rationale>
+      </step>
+
+      <step n="7" name="Aggregate and verdict">
+        <outputs>
+          <output name="rain_within_72h">Share of matches with at least 1mm inside three days</output>
+          <output name="mean_7day_precip_mm">Average total of the following week</output>
+          <output name="mean_tmax_delta_day3_c">Average temperature change by day three</output>
+          <output name="verdict">Template-generated sentence, computed values only, no LLM</output>
+        </outputs>
+      </step>
+    </algorithm>
+
+    <algorithm name="Grounded Query Resolution" module="ai_assistant.py">
+      <step n="1">Regex entity extraction for location override, timeframe bucket, and intent</step>
+      <step n="2">Real forecast fetch for the resolved location, geocoding first if another place is named</step>
+      <step n="3">Hazard evaluation over that forecast</step>
+      <step n="4">Slice extraction limited to the requested timeframe's hour range</step>
+      <step n="5">Explanation from verified numbers, via LLM or deterministic template</step>
+      <constraint>The explainer is instructed to explain these exact numbers and never invent values</constraint>
+    </algorithm>
+
+    <algorithm name="Archive Caching" module="archive_service.py">
+      <detail>In-memory LRU, 32 entries, 24 hour TTL</detail>
+      <detail>Keyed on coordinates rounded to 0.1 degrees, roughly 11km, approximating the provider's own grid</detail>
+      <rationale>Finer keys would spend cache slots on identical upstream data</rationale>
+      <detail>Rows with a null in any required field are dropped at load, so consumers may assume complete records</detail>
+      <impact>Shared by both the analog engine and the climate service, so one fetch serves two features</impact>
+    </algorithm>
+  </algorithms>
+
+  <domainModel>
+    <weatherCodes standard="WMO" count="21" location="weather_service.py">
+      <mapsTo>label, icon name, category</mapsTo>
+      <categories>clear, cloudy, fog, drizzle, rain, heavy-rain, snow, thunderstorm</categories>
+    </weatherCodes>
+
+    <alertSeverities>
+      <severity name="Low"/>
+      <severity name="Moderate"/>
+      <severity name="High"/>
+      <severity name="Extreme"/>
+    </alertSeverities>
+
+    <localisation languageCount="4" tokenCount="40">
+      <language code="en" name="English"/>
+      <language code="hi" name="Hindi"/>
+      <language code="te" name="Telugu"/>
+      <language code="ta" name="Tamil"/>
+      <convention>No UI string is inlined; every string routes through the token dictionary</convention>
+    </localisation>
+  </domainModel>
+
+  <metrics>
+    <codebase>
+      <backend files="16" linesOfCode="2186"/>
+      <frontend files="21" linesOfCode="4074"/>
+      <total linesOfCode="6260"/>
+      <largestBackendModule name="ai_assistant.py" loc="576"/>
+      <largestFrontendModule name="WeatherGPTAssistant.tsx" loc="458"/>
+      <apiEndpoints count="10"/>
+      <serviceModules count="7"/>
+      <routerModules count="6"/>
+    </codebase>
+
+    <performance>
+      <measurement name="Archive cold fetch" value="482 KB in approximately 3.2 seconds"/>
+      <measurement name="Archive record size" value="15,218 clean days spanning 1985-01-01 to 2026-08-31"/>
+      <measurement name="Analog endpoint, cold" value="approximately 11.4 seconds"/>
+      <measurement name="Analog endpoint, cached" value="approximately 1.6 seconds"/>
+      <measurement name="Climate endpoint, cached" value="under 10 milliseconds"/>
+      <measurement name="Frontend production build" value="approximately 290 milliseconds"/>
+      <measurement name="Bundle size" value="859 KB raw, 247 KB gzipped"/>
+    </performance>
+
+    <coverage>
+      <note>The repository has no test framework. Verification is by direct endpoint probe.</note>
+      <verifiedLocation name="Hyderabad" coords="17.38, 78.48" regime="Tropical monsoon"/>
+      <verifiedLocation name="Chennai" coords="13.08, 80.27" regime="Tropical, northeast monsoon"/>
+      <verifiedLocation name="London" coords="51.51, -0.13" regime="Temperate maritime"/>
+      <verifiedLocation name="Null Island" coords="0, 0" regime="Equatorial ocean, confirms global coverage"/>
+      <verifiedLocation name="South Pole" coords="-89, 0" regime="Polar, confirms global coverage"/>
+    </coverage>
+  </metrics>
+
+  <designDecisions>
+    <decision id="grounding" title="Numbers never come from a language model">
+      <rationale>An LLM that invents a rainfall figure is worse than no answer, because it is confidently wrong</rationale>
+      <consequence>Two explanation paths, LLM and deterministic, returning an identical shape</consequence>
+    </decision>
+
+    <decision id="fallback" title="Client falls back to the provider when the backend is down">
+      <rationale>Keeps the dashboard usable in degraded conditions</rationale>
+      <consequence>Weather-code mapping is duplicated client-side and must be kept in sync</consequence>
+    </decision>
+
+    <decision id="no-analog-fallback" title="The analog endpoint deliberately has no client fallback">
+      <rationale>
+        The analog computation is the feature. Reimplementing it in TypeScript
+        would duplicate a non-trivial algorithm in two languages and contradict
+        the project's own warning about keeping duplicated logic in sync.
+      </rationale>
+      <consequence>On backend failure the view shows an explanatory empty state</consequence>
+    </decision>
+
+    <decision id="shared-archive" title="One archive layer serves both analog and climate">
+      <rationale>Both features need the same long record; a shared cache means one fetch serves two features</rationale>
+    </decision>
+
+    <decision id="wmo-baseline" title="Climate normals use the 1991-2020 WMO reference period">
+      <rationale>The conventional baseline means departure percentages carry their usual meteorological meaning</rationale>
+    </decision>
+
+    <decision id="episode-separation" title="Analogs must be seven days apart">
+      <rationale>Guarantees each match is an independent weather episode rather than one event sampled repeatedly</rationale>
+    </decision>
+  </designDecisions>
+
+  <knownIssues>
+    <issue severity="low" area="frontend/src/components/layout/Header.tsx">
+      Mobile horizontal overflow: the header's control cluster does not wrap,
+      producing about 592px of content in a 390px viewport. Pre-existing and
+      present on every tab.
+    </issue>
+    <issue severity="low" area="backend/app/core/config.py">
+      LLM_PROVIDER is defined in settings but never consulted. Provider choice is
+      determined by which API key is present.
+    </issue>
+    <issue severity="informational" area="build">
+      The production bundle exceeds the 500 KB warning threshold at 859 KB raw.
+      Code splitting would address it.
+    </issue>
+    <issue severity="informational" area="upstream">
+      The Open-Meteo free tier rate limits repeated cold archive fetches with
+      HTTP 429. The cache makes this rare in normal use; the error is surfaced
+      distinctly so users know to wait rather than assume the location is unsupported.
+    </issue>
+  </knownIssues>
+
+  <futureWork>
+    <item>Wire historical analogs into the chat assistant so it can cite precedent</item>
+    <item>Introduce a test framework; the project currently has none</item>
+    <item>Persistent cache so a restart does not re-warm from cold</item>
+    <item>Code splitting to bring the bundle under the warning threshold</item>
+    <item>Fix the pre-existing mobile header overflow</item>
+  </futureWork>
+
+  <!--
+    Suggested deck outline. Each slide lists the bullets to show and points at
+    the section above that supplies the detail.
+  -->
+  <presentationOutline slideCount="14">
+
+    <slide n="1" title="WeatherGPT" type="title">
+      <bullet>Intelligent Meteorological Intelligence and Advisory</bullet>
+      <bullet>FastAPI and React, grounded in Open-Meteo observed data</bullet>
+    </slide>
+
+    <slide n="2" title="The Problem" source="overview/problem">
+      <bullet>General weather apps report numbers without interpretation</bullet>
+      <bullet>AI weather assistants invent plausible numbers that are not measured</bullet>
+      <bullet>Neither helps a farmer or traveller decide what to do</bullet>
+    </slide>
+
+    <slide n="3" title="The Core Principle" source="overview/corePrinciple">
+      <bullet>Every number originates from Open-Meteo</bullet>
+      <bullet>Language explains numbers, it never produces them</bullet>
+      <bullet>Works with or without an LLM key, same response shape</bullet>
+      <visual>Diagram: fetch real data, extract slice, explain slice</visual>
+    </slide>
+
+    <slide n="4" title="Technology Stack" source="techStack">
+      <bullet>Backend: FastAPI, httpx, Pydantic, Uvicorn</bullet>
+      <bullet>Frontend: React 19, TypeScript, Vite 8, Tailwind 4</bullet>
+      <bullet>Visualisation: Recharts and Leaflet</bullet>
+      <bullet>Data: Open-Meteo forecast, geocoding, and ERA5 archive</bullet>
+    </slide>
+
+    <slide n="5" title="System Architecture" source="architecture">
+      <bullet>Five layers: presentation, API client, routing, services, configuration</bullet>
+      <bullet>Thin routers with a uniform error contract</bullet>
+      <bullet>Seven domain services, each owning one concern</bullet>
+      <visual>Layered block diagram</visual>
+    </slide>
+
+    <slide n="6" title="Resilient Data Flow" source="architecture">
+      <bullet>Client tries the backend first</bullet>
+      <bullet>On failure it calls Open-Meteo directly from the browser</bullet>
+      <bullet>Tradeoff: weather-code mapping is duplicated and must stay in sync</bullet>
+      <visual>Sequence diagram with the fallback branch</visual>
+    </slide>
+
+    <slide n="7" title="Feature Overview" source="features">
+      <bullet>Seven modules: dashboard, assistant, alerts, map, agriculture, climate, deja vu</bullet>
+      <bullet>Localised across English, Hindi, Telugu, and Tamil</bullet>
+      <visual>Screenshot grid of the seven tabs</visual>
+    </slide>
+
+    <slide n="8" title="The Grounded Assistant" source="dataFlows">
+      <bullet>Regex entity extraction into location, timeframe, and intent</bullet>
+      <bullet>Seven intents, five timeframe buckets</bullet>
+      <bullet>Deterministic synthesiser as the no-key fallback</bullet>
+    </slide>
+
+    <slide n="9" title="Severe Weather Alerts" source="features">
+      <bullet>Six IMD-aligned hazard classes</bullet>
+      <bullet>Four severity bands from Low to Extreme</bullet>
+      <bullet>Live alert count badge in the navigation</bullet>
+    </slide>
+
+    <slide n="10" title="Weather Deja Vu" type="highlight" source="features">
+      <bullet>When this place last looked like today, what came next</bullet>
+      <bullet>Analog forecasting: a real technique, essentially never shown to users</bullet>
+      <bullet>Chennai: 8 of 8 closest matches in 41 years were raining within 72 hours</bullet>
+      <visual>Screenshot of the Deja Vu view</visual>
+    </slide>
+
+    <slide n="11" title="How Analog Matching Works" source="algorithms">
+      <bullet>Seasonal gate: plus or minus 10 circular days, about 861 candidates</bullet>
+      <bullet>Six-feature fingerprint, precipitation log-transformed</bullet>
+      <bullet>Weighted Euclidean distance on pool-normalised features</bullet>
+      <bullet>Seven-day separation so each match is a distinct episode</bullet>
+      <visual>Pipeline diagram of the seven steps</visual>
+    </slide>
+
+    <slide n="12" title="A Correctness Lesson" type="insight" source="algorithms">
+      <bullet>First run put three days from one 2015 week in the top eight</bullet>
+      <bullet>Overlapping aftermaths inflated every aggregate</bullet>
+      <bullet>Adding separation moved the result from 50 percent to 25 percent</bullet>
+      <bullet>The original number was wrong; the fix was a correctness fix, not polish</bullet>
+    </slide>
+
+    <slide n="13" title="Engineering Metrics" source="metrics">
+      <bullet>6,260 lines across 37 source files</bullet>
+      <bullet>10 API endpoints, 7 services, 6 routers</bullet>
+      <bullet>Analog query: 11.4s cold, 1.6s cached</bullet>
+      <bullet>Verified across tropical, temperate, equatorial, and polar regimes</bullet>
+    </slide>
+
+    <slide n="14" title="Future Work" source="futureWork">
+      <bullet>Cite historical precedent inside the assistant</bullet>
+      <bullet>Introduce a test framework</bullet>
+      <bullet>Persistent cache and bundle code splitting</bullet>
+    </slide>
+  </presentationOutline>
+
+</project>
